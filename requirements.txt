@@ -1,0 +1,11 @@
+# For dataset
+pandas
+pyarrow
+fastparquet
+
+# For tokenizer
+tokenizers
+
+# For model
+datasets
+transformers[torch]
