@@ -2,12 +2,12 @@
 esci-data
 
 # For dataset
-!requirements.txt
 *.tsv
 *.txt
+!requirements.txt
 
 # For tokenizer and model
-!*/.gitkeep
 ir100-dogfooding-bert/*
 ir100-dogfooding-embedding/*
 ir100-dogfooding-siamese/*
+!*/.gitkeep
