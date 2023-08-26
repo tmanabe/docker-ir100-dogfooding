@@ -6,6 +6,9 @@ fastparquet
 # For tokenizer
 tokenizers
 
-# For model
+# For (embedding-)model
 datasets
 transformers[torch]
+
+# For siamese-model
+sentence_transformers

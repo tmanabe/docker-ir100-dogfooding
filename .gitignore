@@ -2,15 +2,12 @@
 esci-data
 
 # For dataset
-ground-truth.txt
-test.txt
-train.txt
+!requirements.txt
+*.tsv
+*.txt
 
-# For tokenizer
-ir100-dogfooding-bert/tokenizer.json
-
-# For model
-ir100-dogfooding-bert/config.json
-ir100-dogfooding-bert/generation_config.json
-ir100-dogfooding-bert/pytorch_model.bin
-ir100-dogfooding-bert/training_args.bin
+# For tokenizer and model
+!*/.gitkeep
+ir100-dogfooding-bert/*
+ir100-dogfooding-embedding/*
+ir100-dogfooding-siamese/*
