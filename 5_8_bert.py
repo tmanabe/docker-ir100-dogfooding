@@ -16,6 +16,10 @@ if "__main__" == __name__:
     parser.add_argument(
         "--tokenizer-file", default="ir100-dogfooding-bert/tokenizer.json"
     )
+    parser.add_argument(
+        "--tokenizer-config-file",
+        default="ir100-dogfooding-bert/tokenizer_config.json",
+    )
     parser.add_argument("--model-dir", default="ir100-dogfooding-bert")
     args = parser.parse_args()
 
@@ -59,7 +63,7 @@ if "__main__" == __name__:
             ):
                 query = " ".join(query.split())  # For handling LF in queries and titles
                 product_title = " ".join(product_title.split())
-                print(" ".join([esci_label, query, SEP, product_title, SEP]), file=tf)
+                print(" ".join([esci_label, SEP, query, SEP, product_title]), file=tf)
 
         with open(args.test_file, "w") as tf, open(args.ground_truth_file, "w") as gtf:
             for esci_label, query, product_title in zip(
@@ -69,7 +73,7 @@ if "__main__" == __name__:
             ):
                 query = " ".join(query.split())
                 product_title = " ".join(product_title.split())
-                print(" ".join([MASK, query, SEP, product_title, SEP]), file=tf)
+                print(" ".join([MASK, SEP, query, SEP, product_title]), file=tf)
                 print(esci_label, file=gtf)
 
     if "tokenizer" == args.subcommand:
@@ -88,20 +92,25 @@ if "__main__" == __name__:
         tokenizer.train(files=[args.train_file], trainer=tokenizer_trainer)
         tokenizer.save(args.tokenizer_file)
 
-    def load_tokenizer():
-        from transformers import PreTrainedTokenizerFast
+        # For AutoTokenizer
+        from json import dump
 
-        return PreTrainedTokenizerFast(
-            tokenizer_file=args.tokenizer_file,
-            bos_token=CLS,
-            eos_token=SEP,
-            unk_token=UNK,
-            sep_token=SEP,
-            pad_token=PAD,
-            cls_token=CLS,
-            mask_token=MASK,
-            model_max_length=MAX_LENGTH,
-        )
+        with open(args.tokenizer_config_file, "w") as tcf:
+            dump(
+                {
+                    "tokenizer_class": "PreTrainedTokenizerFast",
+                    "bos_token": CLS,
+                    "eos_token": SEP,
+                    "unk_token": UNK,
+                    "sep_token": SEP,
+                    "pad_token": PAD,
+                    "cls_token": CLS,
+                    "mask_token": MASK,
+                    "model_max_length": MAX_LENGTH,
+                },
+                tcf,
+                indent=2,
+            )
 
     if "model" == args.subcommand:  # takes 10 minutes with an RTX 4080
         # Ref: https://github.com/huggingface/transformers/blob/v4.18.0/examples/pytorch/language-modeling/run_mlm.py
@@ -109,7 +118,9 @@ if "__main__" == __name__:
 
         TEXT_COLUMN = "text"
 
-        tokenizer = load_tokenizer()
+        from transformers import AutoTokenizer
+
+        tokenizer = AutoTokenizer.from_pretrained(args.model_dir)
 
         def tokenize_function(examples):
             return tokenizer(
@@ -140,10 +151,10 @@ if "__main__" == __name__:
         trainer = Trainer(
             model=BertForMaskedLM(  # , a tiny version of
                 BertConfig(
-                    hidden_size=192,
-                    num_hidden_layers=3,
-                    num_attention_heads=3,
-                    intermediate_size=768,
+                    hidden_size=128,
+                    num_hidden_layers=2,
+                    num_attention_heads=2,
+                    intermediate_size=512,
                     max_position_embeddings=MAX_LENGTH,
                     type_vocab_size=1,
                 )
@@ -173,7 +184,6 @@ if "__main__" == __name__:
         fill_mask = pipeline(
             "fill-mask",
             model=args.model_dir,
-            tokenizer=load_tokenizer(),
             device=0,
         )
 
@@ -219,7 +229,7 @@ if "__main__" == __name__:
             print(f"{label}: {total_penalties[label] / counts[label]}")
 
         # For example,
-        # E: 0.07940401978097034
-        # S: 0.08698296396494333
-        # C: 0.07644840514785672
-        # I: 0.09438480036770797
+        # E: 0.07575463336200325
+        # S: 0.0837175375152247
+        # C: 0.07590497024166314
+        # I: 0.09150046868014255

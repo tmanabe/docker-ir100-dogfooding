@@ -115,7 +115,7 @@ if "__main__" == __name__:
         tokenizer.train(files=[args.embedding_train_file], trainer=tokenizer_trainer)
         tokenizer.save(args.tokenizer_file)
 
-        # For SentenceTransformer (and AutoTokenizer)
+        # For AutoTokenizer
         from json import dump
 
         with open(args.tokenizer_config_file, "w") as tcf:
@@ -135,28 +135,15 @@ if "__main__" == __name__:
                 indent=2,
             )
 
-    def load_tokenizer():
-        from transformers import PreTrainedTokenizerFast
-
-        return PreTrainedTokenizerFast(
-            tokenizer_file=args.tokenizer_file,
-            bos_token=CLS,
-            eos_token=SEP,
-            unk_token=UNK,
-            sep_token=SEP,
-            pad_token=PAD,
-            cls_token=CLS,
-            mask_token=MASK,
-            model_max_length=MAX_LENGTH,
-        )
-
     if "embedding-model" == args.subcommand:  # takes 10 minutes with an RTX 4080
         # Ref: https://github.com/huggingface/transformers/blob/v4.18.0/examples/pytorch/language-modeling/run_mlm.py
         from datasets import load_dataset
 
         TEXT_COLUMN = "text"
 
-        tokenizer = load_tokenizer()
+        from transformers import AutoTokenizer
+
+        tokenizer = AutoTokenizer.from_pretrained(args.embedding_model_dir)
 
         def tokenize_function(examples):
             return tokenizer(
@@ -187,10 +174,10 @@ if "__main__" == __name__:
         trainer = Trainer(
             model=BertForMaskedLM(  # , a tiny version of
                 BertConfig(
-                    hidden_size=192,
-                    num_hidden_layers=3,
-                    num_attention_heads=3,
-                    intermediate_size=768,
+                    hidden_size=128,
+                    num_hidden_layers=2,
+                    num_attention_heads=2,
+                    intermediate_size=512,
                     max_position_embeddings=MAX_LENGTH,
                     type_vocab_size=1,
                 )
@@ -290,5 +277,5 @@ if "__main__" == __name__:
             print(f"{label}: {total_actuals[label] / counts[label]}")
 
         # For example,
-        # -1.0: 0.7077117343293025
-        #  1.0: 0.849824585044569
+        # -1.0: 0.7276095060590374
+        #  1.0: 0.8536531081400486
