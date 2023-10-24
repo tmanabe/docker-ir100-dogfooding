@@ -35,7 +35,7 @@ if "__main__" == __name__:
 
         merged_jp = load_merged_jp()
         merged_jp["expect"] = merged_jp["esci_label"].apply(
-            lambda esci_label: {"E": 1.0, "S": 1.0, "C": 1.0, "I": 0.0}[esci_label]
+            lambda esci_label: {"E": 1.0, "S": 0.0, "C": 0.0, "I": 0.0}[esci_label]
         )
         for column in ("query", "product_title"):  # For handling LF in queries and titles
             merged_jp[column] = merged_jp[column].apply(lambda s: " ".join(s.split()))
@@ -62,8 +62,8 @@ if "__main__" == __name__:
     def test(model):
         from pandas import read_csv
 
-        def encode(column_name):
-            unique_values = sorted(set(merged_jp_test[column_name]))
+        def encode(values):
+            unique_values = sorted(set(values))
             unique_values = {
                 string: embedding
                 for string, embedding in zip(
@@ -71,29 +71,44 @@ if "__main__" == __name__:
                     model.encode(unique_values, batch_size=name_space.batch_size, show_progress_bar=True),
                 )
             }
-            return [unique_values[string] for string in merged_jp_test[column_name]]
+            return [unique_values[string] for string in values]
 
         merged_jp_test = read_csv(name_space.test_file, sep="\t")
-        queries = encode("query")
-        product_titles = encode("product_title")
+        queries = encode(merged_jp_test["query"])
+        product_titles = encode(merged_jp_test["product_title"])
 
         from numpy import dot
         from numpy.linalg import norm
 
-        labels = sorted(set(merged_jp_test["expect"]))
-        totals, counts = {label: 0.0 for label in labels}, {label: 0 for label in labels}
-        for expect, query, product_title in zip(merged_jp_test["expect"], queries, product_titles):
-            totals[expect] += dot(query, product_title) / (norm(query) * norm(product_title))
-            counts[expect] += 1
-        for label in labels:
-            print(f"{label}: {totals[label] / counts[label]}")
+        def calc_mrr(data_frame):
+            data_frame.sort_values(["query", "actual"], ascending=[True, False], inplace=True)
+            last_query, rr, total, count, rank = None, None, 0.0, 0, 0
+            for query, expect in zip(data_frame["query"], data_frame["expect"]):
+                if last_query != query:
+                    if rr is not None:
+                        total += rr
+                        count += 1
+                    last_query, rr, rank = query, None, 0
+                rank += 1
+                if rr is None and 0 < float(expect):
+                    rr = 1.0 / rank
+            if rr is not None:
+                total += rr
+                count += 1
+            if 0 < count:
+                return round(total / count, 3)
+            else:
+                return None
+
+        actuals = []
+        for query, product_title in zip(queries, product_titles):
+            actuals.append(dot(query, product_title) / (norm(query) * norm(product_title)))
+        merged_jp_test["actual"] = actuals
+        return calc_mrr(merged_jp_test)
 
     if "baseline" == name_space.subcommand:
         model = get_sentence_transformer("line-corporation/line-distilbert-base-japanese")
-        test(model)
-        # For example,
-        # 0.0: 0.9513349905107426
-        # 1.0: 0.959761315959156
+        print(test(model))  # For example: 0.818
 
     if "fine-tune" == name_space.subcommand:  # takes 10 minutes with an RTX 4080
         # Ref: https://www.sbert.net/docs/training/overview.html
@@ -129,7 +144,4 @@ if "__main__" == __name__:
     if "test" == name_space.subcommand:
         # Ref: https://www.sbert.net/examples/applications/computing-embeddings/README.html
         model = get_sentence_transformer(name_space.model_dir)
-        test(model)
-        # For example,
-        # 0.0: 0.6788792977866293
-        # 1.0: 0.8989484219986726
+        print(test(model))  # For example: 0.868
