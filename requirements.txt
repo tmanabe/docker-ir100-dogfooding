@@ -5,6 +5,8 @@ fastparquet
 
 # For tokenizer
 tokenizers
+fugashi
+unidic_lite
 
 # For (embedding-)model
 datasets
