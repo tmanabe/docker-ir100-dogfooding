@@ -5,6 +5,7 @@ if "__main__" == __name__:
 
     parser = ArgumentParser()
     parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument("--bfloat16", action="store_true")
     parser.add_argument("--model-dir", default="wip-line-distilbert")
     parser.add_argument("subcommand", choices=["dataset", "baseline", "fine-tune", "test"])
     parser.add_argument("--test-file", default="test.tsv")
@@ -48,6 +49,11 @@ if "__main__" == __name__:
             )
 
     def get_sentence_transformer(model_name_or_path):
+        if name_space.bfloat16:
+            assert name_space.subcommand in ("baseline", "test")
+            import torch
+            torch.set_default_dtype(torch.bfloat16)
+
         from sentence_transformers import SentenceTransformer
         from sentence_transformers.models import Pooling
         from sentence_transformers.models import Transformer
