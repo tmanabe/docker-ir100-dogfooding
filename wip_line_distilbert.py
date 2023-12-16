@@ -138,7 +138,12 @@ if "__main__" == __name__:
         model.fit(
             train_objectives=[
                 (
-                    DataLoader(train_examples, shuffle=True, batch_size=name_space.batch_size),
+                    DataLoader(
+                        train_examples,
+                        shuffle=True,
+                        batch_size=name_space.batch_size,
+                        num_workers=2,
+                    ),
                     CosineSimilarityLoss(model),
                 )
             ],
