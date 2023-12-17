@@ -1,3 +1,5 @@
+__pycache__
+
 # For clone
 esci-data
 
@@ -10,4 +12,5 @@ esci-data
 ir100-dogfooding-bert/*
 ir100-dogfooding-embedding/*
 ir100-dogfooding-siamese/*
+wip-line-distilbert/*
 !*/.gitkeep
