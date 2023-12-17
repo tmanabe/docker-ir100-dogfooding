@@ -4,9 +4,10 @@ if "__main__" == __name__:
     from argparse import ArgumentParser
 
     parser = ArgumentParser()
-    parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--bfloat16", action="store_true")
     parser.add_argument("--model-dir", default="wip-line-distilbert")
+    parser.add_argument("--nf4", action="store_true")
     parser.add_argument("subcommand", choices=["dataset", "baseline", "fine-tune", "test"])
     parser.add_argument("--test-file", default="test.tsv")
     parser.add_argument("--train-file", default="train.tsv")
@@ -49,10 +50,20 @@ if "__main__" == __name__:
             )
 
     def get_sentence_transformer(model_name_or_path):
-        if name_space.bfloat16:
+        if name_space.bfloat16 or name_space.nf4:
             assert name_space.subcommand in ("baseline", "test")
             import torch
-            torch.set_default_dtype(torch.bfloat16)
+            if name_space.nf4:
+                from transformers import BitsAndBytesConfig
+                bnb_config = BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    bnb_4bit_quant_type="nf4",
+                    bnb_4bit_compute_dtype=(None, torch.bfloat16)[name_space.bfloat16],
+                )
+            else:
+                torch.set_default_dtype(torch.bfloat16)
+            if name_space.bfloat16:
+                name_space.batch_size *= 2
 
         from sentence_transformers import SentenceTransformer
         from sentence_transformers.models import Pooling
@@ -61,7 +72,15 @@ if "__main__" == __name__:
         transformer_module = Transformer(
             model_name_or_path,
             tokenizer_args={"trust_remote_code": True},
+            # model_args={"quantization_config": bnb_config},  # NOT effective?
         )
+        if name_space.nf4:  # Quick-and-dirty fix
+            from transformers import AutoModel
+            transformer_module.auto_model = AutoModel.from_pretrained(
+                model_name_or_path,
+                quantization_config=bnb_config,
+            )
+            print(transformer_module.auto_model)
         pooling_module = Pooling(transformer_module.get_word_embedding_dimension())
         return SentenceTransformer(modules=[transformer_module, pooling_module])
 
