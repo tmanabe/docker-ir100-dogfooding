@@ -10,7 +10,11 @@ unidic_lite
 
 # For (embedding-)model
 datasets
-transformers[torch]
+# https://huggingface.co/blog/4bit-transformers-bitsandbytes
+bitsandbytes
+git+https://github.com/huggingface/transformers.git
+git+https://github.com/huggingface/peft.git
+git+https://github.com/huggingface/accelerate.git
 
 # For siamese-model
 sentence_transformers
