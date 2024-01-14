@@ -114,28 +114,9 @@ if "__main__" == __name__:
         queries = encode(merged_jp_test["query"])
         product_titles = encode(merged_jp_test["product_title"])
 
+        from MRR import calc_mrr
         from numpy import dot
         from numpy.linalg import norm
-
-        def calc_mrr(data_frame):
-            data_frame.sort_values(["query", "actual"], ascending=[True, False], inplace=True)
-            last_query, rr, total, count, rank = None, None, 0.0, 0, 0
-            for query, expect in zip(data_frame["query"], data_frame["expect"]):
-                if last_query != query:
-                    if rr is not None:
-                        total += rr
-                        count += 1
-                    last_query, rr, rank = query, None, 0
-                rank += 1
-                if rr is None and 0 < float(expect):
-                    rr = 1.0 / rank
-            if rr is not None:
-                total += rr
-                count += 1
-            if 0 < count:
-                return round(total / count, 3)
-            else:
-                return None
 
         actuals = []
         for query, product_title in zip(queries, product_titles):
