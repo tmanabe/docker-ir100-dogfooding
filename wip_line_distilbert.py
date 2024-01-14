@@ -4,7 +4,7 @@ if "__main__" == __name__:
     from argparse import ArgumentParser
 
     parser = ArgumentParser()
-    parser.add_argument("--accuracy", choices=["fp32", "bf16", "int8", "nf4"], default="fp32")
+    parser.add_argument("--accuracy", choices=["fp32", "bf16", "int8", "nf4", "bool"], default="fp32")
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--model-dir", default="wip-line-distilbert")
     parser.add_argument("subcommand", choices=["dataset", "baseline", "fine-tune", "test"])
@@ -49,7 +49,7 @@ if "__main__" == __name__:
             )
 
     def get_sentence_transformer(model_name_or_path):
-        if "fp32" != name_space.accuracy:
+        if name_space.accuracy not in ("fp32", "bool"):
             assert name_space.subcommand in ("baseline", "test")
         if "bf16" == name_space.accuracy:
             import torch
@@ -86,7 +86,15 @@ if "__main__" == __name__:
             )
             print(transformer_module.auto_model)
         pooling_module = Pooling(transformer_module.get_word_embedding_dimension())
-        return SentenceTransformer(modules=[transformer_module, pooling_module])
+        modules = [transformer_module, pooling_module]
+        if "bool" == name_space.accuracy:
+            from Hashing import Hashing
+            import torch
+            if "fine-tune" == name_space.subcommand:
+                modules.append(Hashing(torch.nn.Tanh()))
+            else:
+                modules.append(Hashing(torch.sign))
+        return SentenceTransformer(modules=modules)
 
     def test(model):
         from pandas import read_csv
