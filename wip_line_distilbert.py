@@ -44,7 +44,7 @@ if "__main__" == __name__:
             merged_jp[merged_jp.split == split].to_csv(
                 {"train": name_space.train_file, "test": name_space.test_file}[split],
                 sep="\t",
-                columns=["expect", "query", "product_title"],
+                columns=["expect", "query", "product_id", "product_title"],
                 index=False,
             )
 
@@ -122,7 +122,7 @@ if "__main__" == __name__:
         for query, product_title in zip(queries, product_titles):
             actuals.append(dot(query, product_title) / (norm(query) * norm(product_title)))
         merged_jp_test["actual"] = actuals
-        return calc_mrr(merged_jp_test)
+        return calc_mrr(merged_jp_test, document_column="product_id")
 
     if "baseline" == name_space.subcommand:
         model = get_sentence_transformer("line-corporation/line-distilbert-base-japanese")

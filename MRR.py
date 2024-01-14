@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
 
-def calc_mrr(data_frame, query_column="query", actual_column="actual", expect_column="expect"):
-    data_frame.sort_values([query_column, actual_column], ascending=[True, False], inplace=True)
+def calc_mrr(
+    data_frame, query_column="query", actual_column="actual", document_column="document", expect_column="expect"
+):
+    data_frame.sort_values([query_column, actual_column, document_column], ascending=[True, False, True], inplace=True)
     last_query, rr, total, count, rank = None, None, 0.0, 0, 0
     for query, expect in zip(data_frame[query_column], data_frame[expect_column]):
         if last_query != query:
@@ -36,7 +38,7 @@ if "__main__" == __name__:
 
     subject = DataFrame(
         {
-            "query":  [1, 1, 2, 2, 2, 0, 0, 0, 0],
+            "query": [1, 1, 2, 2, 2, 0, 0, 0, 0],
             "actual": [5, 2, 6, 8, 1, 0, 4, 3, 9],
             "expect": [0, 1, 0, 1, 0, 1, 0, 1, 0],
         }
