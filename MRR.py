@@ -31,6 +31,7 @@ if "__main__" == __name__:
         {
             "query": [],
             "actual": [],
+            "document": [],
             "expect": [],
         }
     )
@@ -39,7 +40,8 @@ if "__main__" == __name__:
     subject = DataFrame(
         {
             "query": [1, 1, 2, 2, 2, 0, 0, 0, 0],
-            "actual": [5, 2, 6, 8, 1, 0, 4, 3, 9],
+            "actual": [5, 2, 6, 8, 1, 0, 3, 3, 9],
+            "document": [0, 1, 2, 3, 4, 5, 6, 7, 8],
             "expect": [0, 1, 0, 1, 0, 1, 0, 1, 0],
         }
     )
